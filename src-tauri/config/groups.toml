@@ -1,0 +1,528 @@
+[base]
+fields = ["Date", "Time"]
+
+["系统"]
+fields = [
+    "提交虚拟内存 [MB]",
+    "可用虚拟内存 [MB]",
+    "虚拟内存使用率 [%]",
+    "已用物理内存 [MB]",
+    "可用物理内存 [MB]",
+    "物理内存使用率 [%]",
+    "分页文件使用率 [%]",
+]
+
+["CPU"]
+fields = [
+    "Core VIDs (avg) [V]",
+    "核心频率 (avg) [MHz]",
+    "总线频率 [MHz]",
+    "核心有效频率 (avg) [MHz]",
+    "平均有效频率 [MHz]",
+    "核心使用率 (avg) [%]",
+    "最大CPU/线程使用率 [%]",
+    "CPU 总使用率 [%]",
+    "核心使用率 (avg) [%]",
+    "CPU 总使用率 [%]",
+    "核心倍频 (avg) [x]",
+]
+
+["CPU"."Core VIDs"]
+field_pattern = "Core \\d+ VID \\[V\\]"
+#fields = [
+#    "Core 0 VID [V]",
+#    "Core 1 VID [V]",
+#    "Core 2 VID [V]",
+#    "Core 3 VID [V]",
+#    "Core 4 VID [V]",
+#    "Core 5 VID [V]",
+#    "Core 6 VID [V]",
+#    "Core 7 VID [V]",
+#    "Core 8 VID [V]",
+#    "Core 9 VID [V]",
+#    "Core 10 VID [V]",
+#    "Core 11 VID [V]",
+#    "Core 12 VID [V]",
+#    "Core 13 VID [V]",
+#    "Core 14 VID [V]",
+#    "Core 15 VID [V]",
+#]
+
+["CPU"."核心频率"]
+field_pattern = "Core \\d+ 频率 \\(perf #\\d+/\\d+\\) \\[MHz\\]"
+#fields = [
+#    "Core 0 频率 (perf #7/8) [MHz]",
+#    "Core 1 频率 (perf #2/3) [MHz]",
+#    "Core 2 频率 (perf #1/1) [MHz]",
+#    "Core 3 频率 (perf #3/4) [MHz]",
+#    "Core 4 频率 (perf #4/5) [MHz]",
+#    "Core 5 频率 (perf #1/2) [MHz]",
+#    "Core 6 频率 (perf #6/7) [MHz]",
+#    "Core 7 频率 (perf #5/6) [MHz]",
+#    "Core 8 频率 (perf #10/11) [MHz]",
+#    "Core 9 频率 (perf #14/15) [MHz]",
+#    "Core 10 频率 (perf #11/12) [MHz]",
+#    "Core 11 频率 (perf #12/13) [MHz]",
+#    "Core 12 频率 (perf #13/14) [MHz]",
+#    "Core 13 频率 (perf #9/10) [MHz]",
+#    "Core 14 频率 (perf #15/16) [MHz]",
+#    "Core 15 频率 (perf #8/9) [MHz]",
+#]
+
+["CPU"."核心有效频率"]
+field_pattern = "Core \\d+ T\\d+ 有效频率 \\[MHz\\]"
+#fields = [
+#    "Core 0 T0 有效频率 [MHz]",
+#    "Core 0 T1 有效频率 [MHz]",
+#    "Core 1 T0 有效频率 [MHz]",
+#    "Core 1 T1 有效频率 [MHz]",
+#    "Core 2 T0 有效频率 [MHz]",
+#    "Core 2 T1 有效频率 [MHz]",
+#    "Core 3 T0 有效频率 [MHz]",
+#    "Core 3 T1 有效频率 [MHz]",
+#    "Core 4 T0 有效频率 [MHz]",
+#    "Core 4 T1 有效频率 [MHz]",
+#    "Core 5 T0 有效频率 [MHz]",
+#    "Core 5 T1 有效频率 [MHz]",
+#    "Core 6 T0 有效频率 [MHz]",
+#    "Core 6 T1 有效频率 [MHz]",
+#    "Core 7 T0 有效频率 [MHz]",
+#    "Core 7 T1 有效频率 [MHz]",
+#    "Core 8 T0 有效频率 [MHz]",
+#    "Core 8 T1 有效频率 [MHz]",
+#    "Core 9 T0 有效频率 [MHz]",
+#    "Core 9 T1 有效频率 [MHz]",
+#    "Core 10 T0 有效频率 [MHz]",
+#    "Core 10 T1 有效频率 [MHz]",
+#    "Core 11 T0 有效频率 [MHz]",
+#    "Core 11 T1 有效频率 [MHz]",
+#    "Core 12 T0 有效频率 [MHz]",
+#    "Core 12 T1 有效频率 [MHz]",
+#    "Core 13 T0 有效频率 [MHz]",
+#    "Core 13 T1 有效频率 [MHz]",
+#    "Core 14 T0 有效频率 [MHz]",
+#    "Core 14 T1 有效频率 [MHz]",
+#    "Core 15 T0 有效频率 [MHz]",
+#    "Core 15 T1 有效频率 [MHz]",
+#]
+
+["CPU"."核心使用率"]
+field_pattern = "Core \\d+ T\\d+ 使用率 \\[%\\]"
+#fields = [
+#    "Core 0 T0 使用率 [%]",
+#    "Core 0 T1 使用率 [%]",
+#    "Core 1 T0 使用率 [%]",
+#    "Core 1 T1 使用率 [%]",
+#    "Core 2 T0 使用率 [%]",
+#    "Core 2 T1 使用率 [%]",
+#    "Core 3 T0 使用率 [%]",
+#    "Core 3 T1 使用率 [%]",
+#    "Core 4 T0 使用率 [%]",
+#    "Core 4 T1 使用率 [%]",
+#    "Core 5 T0 使用率 [%]",
+#    "Core 5 T1 使用率 [%]",
+#    "Core 6 T0 使用率 [%]",
+#    "Core 6 T1 使用率 [%]",
+#    "Core 7 T0 使用率 [%]",
+#    "Core 7 T1 使用率 [%]",
+#    "Core 8 T0 使用率 [%]",
+#    "Core 8 T1 使用率 [%]",
+#    "Core 9 T0 使用率 [%]",
+#    "Core 9 T1 使用率 [%]",
+#    "Core 10 T0 使用率 [%]",
+#    "Core 10 T1 使用率 [%]",
+#    "Core 11 T0 使用率 [%]",
+#    "Core 11 T1 使用率 [%]",
+#    "Core 12 T0 使用率 [%]",
+#    "Core 12 T1 使用率 [%]",
+#    "Core 13 T0 使用率 [%]",
+#    "Core 13 T1 使用率 [%]",
+#    "Core 14 T0 使用率 [%]",
+#    "Core 14 T1 使用率 [%]",
+#    "Core 15 T0 使用率 [%]",
+#    "Core 15 T1 使用率 [%]",
+#]
+
+["CPU"."核心使用率(任务管理器)"]
+field_pattern = "Core \\d+ T\\d+ 使用率 \\[%\\]"
+#fields = [
+#    "Core 0 T0 使用率 [%]",
+#    "Core 0 T1 使用率 [%]",
+#    "Core 1 T0 使用率 [%]",
+#    "Core 1 T1 使用率 [%]",
+#    "Core 2 T0 使用率 [%]",
+#    "Core 2 T1 使用率 [%]",
+#    "Core 3 T0 使用率 [%]",
+#    "Core 3 T1 使用率 [%]",
+#    "Core 4 T0 使用率 [%]",
+#    "Core 4 T1 使用率 [%]",
+#    "Core 5 T0 使用率 [%]",
+#    "Core 5 T1 使用率 [%]",
+#    "Core 6 T0 使用率 [%]",
+#    "Core 6 T1 使用率 [%]",
+#    "Core 7 T0 使用率 [%]",
+#    "Core 7 T1 使用率 [%]",
+#    "Core 8 T0 使用率 [%]",
+#    "Core 8 T1 使用率 [%]",
+#    "Core 9 T0 使用率 [%]",
+#    "Core 9 T1 使用率 [%]",
+#    "Core 10 T0 使用率 [%]",
+#    "Core 10 T1 使用率 [%]",
+#    "Core 11 T0 使用率 [%]",
+#    "Core 11 T1 使用率 [%]",
+#    "Core 12 T0 使用率 [%]",
+#    "Core 12 T1 使用率 [%]",
+#    "Core 13 T0 使用率 [%]",
+#    "Core 13 T1 使用率 [%]",
+#    "Core 14 T0 使用率 [%]",
+#    "Core 14 T1 使用率 [%]",
+#    "Core 15 T0 使用率 [%]",
+#    "Core 15 T1 使用率 [%]",
+#]
+
+["CPU"."核心倍频"]
+field_pattern = "Core \\d+ 倍频 \\[x\\]"
+#fields = [
+#    "Core 0 倍频 [x]",
+#    "Core 1 倍频 [x]",
+#    "Core 2 倍频 [x]",
+#    "Core 3 倍频 [x]",
+#    "Core 4 倍频 [x]",
+#    "Core 5 倍频 [x]",
+#    "Core 6 倍频 [x]",
+#    "Core 7 倍频 [x]",
+#    "Core 8 倍频 [x]",
+#    "Core 9 倍频 [x]",
+#    "Core 10 倍频 [x]",
+#    "Core 11 倍频 [x]",
+#    "Core 12 倍频 [x]",
+#    "Core 13 倍频 [x]",
+#    "Core 14 倍频 [x]",
+#    "Core 15 倍频 [x]",
+#]
+
+["CPU C-State驻留率"]
+fields = [
+    "Package C6 驻留率 [%]",
+    "Core C0 驻留率 (avg) [%]",
+    "Core C1 驻留率 (avg) [%]",
+    "Core C6 驻留率 (avg) [%]",
+]
+
+["CPU C-State驻留率"."Core C0 驻留率"]
+field_pattern = "Core \\d+ C0 驻留率 \\[%\\]"
+#fields = [
+#    "Core 0 C0 驻留率 [%]",
+#    "Core 1 C0 驻留率 [%]",
+#    "Core 2 C0 驻留率 [%]",
+#    "Core 3 C0 驻留率 [%]",
+#    "Core 4 C0 驻留率 [%]",
+#    "Core 5 C0 驻留率 [%]",
+#    "Core 6 C0 驻留率 [%]",
+#    "Core 7 C0 驻留率 [%]",
+#    "Core 8 C0 驻留率 [%]",
+#    "Core 9 C0 驻留率 [%]",
+#    "Core 10 C0 驻留率 [%]",
+#    "Core 11 C0 驻留率 [%]",
+#    "Core 12 C0 驻留率 [%]",
+#    "Core 13 C0 驻留率 [%]",
+#    "Core 14 C0 驻留率 [%]",
+#    "Core 15 C0 驻留率 [%]",
+#]
+
+["CPU C-State驻留率"."Core C1 驻留率"]
+field_pattern = "Core \\d+ C1 驻留率 \\[%\\]"
+#fields = [
+#    "Core 0 C1 驻留率 [%]",
+#    "Core 1 C1 驻留率 [%]",
+#    "Core 2 C1 驻留率 [%]",
+#    "Core 3 C1 驻留率 [%]",
+#    "Core 4 C1 驻留率 [%]",
+#    "Core 5 C1 驻留率 [%]",
+#    "Core 6 C1 驻留率 [%]",
+#    "Core 7 C1 驻留率 [%]",
+#    "Core 8 C1 驻留率 [%]",
+#    "Core 9 C1 驻留率 [%]",
+#    "Core 10 C1 驻留率 [%]",
+#    "Core 11 C1 驻留率 [%]",
+#    "Core 12 C1 驻留率 [%]",
+#    "Core 13 C1 驻留率 [%]",
+#    "Core 14 C1 驻留率 [%]",
+#    "Core 15 C1 驻留率 [%]",
+#]
+
+["CPU C-State驻留率"."Core C6 驻留率"]
+field_pattern = "Core \\d+ C6 驻留率 \\[%\\]"
+#fields = [
+#    "Core 0 C6 驻留率 [%]",
+#    "Core 1 C6 驻留率 [%]",
+#    "Core 2 C6 驻留率 [%]",
+#    "Core 3 C6 驻留率 [%]",
+#    "Core 4 C6 驻留率 [%]",
+#    "Core 5 C6 驻留率 [%]",
+#    "Core 6 C6 驻留率 [%]",
+#    "Core 7 C6 驻留率 [%]",
+#    "Core 8 C6 驻留率 [%]",
+#    "Core 9 C6 驻留率 [%]",
+#    "Core 10 C6 驻留率 [%]",
+#    "Core 11 C6 驻留率 [%]",
+#    "Core 12 C6 驻留率 [%]",
+#    "Core 13 C6 驻留率 [%]",
+#    "Core 14 C6 驻留率 [%]",
+#    "Core 15 C6 驻留率 [%]",
+#]
+
+["内存时序"]
+fields = [
+    "内存频率 [MHz]",
+    "内存倍频 [x]",
+    "Tcas [T]",
+    "Trcd [T]",
+    "Trp [T]",
+    "Tras [T]",
+    "Trc [T]",
+    "Trfc [T]",
+    "Command Rate [T]",
+]
+
+["CPU Enhanced"]
+fields = [
+    "CPU (Tctl/Tdie) [℃]",
+    "CPU 外壳 (平均) [℃]",
+    "CPU CCD1 (Tdie) [℃]",
+    "CPU CCD2 (Tdie) [℃]",
+    "核心温度 (avg) [℃]",
+    "L3 温度 (avg) [℃]",
+    "CPU IOD Hotspot [℃]",
+    "CPU IOD 平均值 [℃]",
+    "CPU 核心电压 (SVI2 TFN) [V]",
+    "SoC 电压 (SVI2 TFN) [V]",
+    "CPU Core VID (Effective) [V]",
+    "CPU 核心电流 (SVI2 TFN) [A]",
+    "SoC 电流 (SVI2 TFN) [A]",
+    "CPU TDC [A]",
+    "CPU EDC [A]",
+    "CPU 封装功率 [W]",
+    "核心功率 (avg) [W]",
+    "CPU 核心功率 (SVI2 TFN) [W]",
+    "CPU SoC 功率 (SVI2 TFN) [W]",
+    "Core+SoC 功率 (SVI2 TFN) [W]",
+    "CPU PPT [W]",
+    "Infinity Fabric 频率 (FCLK) [MHz]",
+    "内存控制器频率 (UCLK) [MHz]",
+    "L3 频率 (avg) [MHz]",
+    "频率限制 - 全局 [MHz]",
+    "CPU PPT Limit [%]",
+    "CPU TDC 限制 [%]",
+    "CPU EDC 限制 [%]",
+    "Thermal Limit [%]",
+    "功率报告偏差 (准确度) [%]",
+    "过热降频 (HTC) [Yes/No]",
+    "过热降频 (PROCHOT CPU) [Yes/No]",
+    "过热降频 (PROCHOT EXT) [Yes/No]",
+    "DRAM 读取带宽 [GB/s]",
+    "DRAM 写入带宽 [GB/s]",
+    "活动核心的平均数 []",
+]
+
+["CPU Enhanced"."核心温度"]
+field_pattern = "Core \\d+ \\(CCD\\d+\\) \\[℃\\]"
+#fields = [
+#    "Core0 (CCD1) [℃]",
+#    "Core1 (CCD1) [℃]",
+#    "Core2 (CCD1) [℃]",
+#    "Core3 (CCD1) [℃]",
+#    "Core4 (CCD1) [℃]",
+#    "Core5 (CCD1) [℃]",
+#    "Core6 (CCD1) [℃]",
+#    "Core7 (CCD1) [℃]",
+#    "Core8 (CCD2) [℃]",
+#    "Core9 (CCD2) [℃]",
+#    "Core10 (CCD2) [℃]",
+#    "Core11 (CCD2) [℃]",
+#    "Core12 (CCD2) [℃]",
+#    "Core13 (CCD2) [℃]",
+#    "Core14 (CCD2) [℃]",
+#    "Core15 (CCD2) [℃]",
+#]
+
+["CPU Enhanced"."L3 温度"]
+fields = ["L3 缓存 (CCD1) [℃]", "L3 缓存 (CCD2) [℃]"]
+
+["CPU Enhanced"."核心功率"]
+field_pattern = "Core \\d+ 功率 \\[W\\]"
+fields = [
+    "Core 0 功率 [W]",
+    "Core 1 功率 [W]",
+    "Core 2 功率 [W]",
+    "Core 3 功率 [W]",
+    "Core 4 功率 [W]",
+    "Core 5 功率 [W]",
+    "Core 6 功率 [W]",
+    "Core 7 功率 [W]",
+    "Core 8 功率 [W]",
+    "Core 9 功率 [W]",
+    "Core 10 功率 [W]",
+    "Core 11 功率 [W]",
+    "Core 12 功率 [W]",
+    "Core 13 功率 [W]",
+    "Core 14 功率 [W]",
+    "Core 15 功率 [W]",
+]
+
+["CPU Enhanced"."L3 频率"]
+fields = ["L3 缓存 (CCD1) [MHz]", "L3 缓存 (CCD2) [MHz]"]
+
+["主板"]
+fields = [
+    "主板 [℃]",
+    "Temp3 [℃]",
+    "Temp4 [℃]",
+    "CPU (加权值) [℃]",
+    "CPU 封装 [℃]",
+    "CPU [℃]",
+    "Temp9 [℃]",
+    "TSI0 (CPU) [℃]",
+    "芯片组 [℃]",
+    "Vcore [V]",
+    "+5V [V]",
+    "AVSB [V]",
+    "3VCC [V]",
+    "+12V [V]",
+    "VIN8 [V]",
+    "VIN4 [V]",
+    "3VSB [V]",
+    "VBAT [V]",
+    "VTT [V]",
+    "VIN5 [V]",
+    "VIN6 [V]",
+    "VIN2 [V]",
+    "VIN3 [V]",
+    "VIN7 [V]",
+    "VIN9 [V]",
+    "VHIF [V]",
+    "CPU [RPM]",
+    "M.2 风扇 [RPM]",
+    "AIO 泵 [RPM]",
+]
+
+["主板芯片组"]
+fields = ["芯片组 [℃]"]
+
+["主板 EC"]
+fields = ["CPU_OPT [RPM]", "CPU 核心电流 [A]", "CPU 核心功率 [W]"]
+
+["S.M.A.R.T."]
+fields = [
+    "磁盘温度 [℃]",
+    "磁盘温度 2 [℃]",
+    "磁盘温度 3 [℃]",
+    "磁盘剩余寿命 [%]",
+    "磁盘可用备用 [%]",
+    "磁盘故障 [Yes/No]",
+    "磁盘警告 [Yes/No]",
+    "主机写入总计 [GB]",
+    "主机读取总计 [GB]",
+]
+
+["Drive"]
+fields = [
+    "读取活动率 [%]",
+    "写入活动率 [%]",
+    "总活动率 [%]",
+    "读取速度 [MB/s]",
+    "写入速度 [MB/s]",
+    "读取总计 [MB]",
+    "写入总计 [MB]",
+]
+
+["GPU"]
+fields = [
+    "GPU 温度 [℃]",
+    "显存结温 [℃]",
+    "GPU 热点温度 [℃]",
+    "GPU 过热限制 [℃]",
+    "GPU 核心电压 [V]",
+    "GPU 线路电压 (avg) [V]",
+    "GPU 风扇1 [RPM]",
+    "GPU 风扇2 [RPM]",
+    "GPU 功率 [W]",
+    "GPU 线路功率 (avg) [W]",
+    "GPU 频率 [MHz]",
+    "显存频率 [MHz]",
+    "GPU 视频频率 [MHz]",
+    "GPU 有效频率 [MHz]",
+    "GPU Crossbar 频率 [MHz]",
+    "GPU 核心使用率 [%]",
+    "显存控制器使用率 [%]",
+    "GPU 视频引擎使用率 [%]",
+    "GPU 总线使用率 [%]",
+    "显存使用 [%]",
+    "GPU D3D 使用率 (avg) [%]",
+    "GPU 风扇1 [%]",
+    "GPU 风扇2 [%]",
+    "GPU 性能受限 (avg) [Yes/No]",
+    "GPU 总功率 [TDP 的百分比] [%]",
+    "GPU 总功率 (标准化) [TDP 的百分比] [%]",
+    "可用显存 [MB]",
+    "分配显存 [MB]",
+    "GPU D3D 专用显存 [MB]",
+    "GPU D3D 共享显存 [MB]",
+    "PCIe 链接速度 [GT/s]",
+]
+
+["GPU"."GPU 线路电压"]
+fields = [
+    "GPU FBVDD 输入电压 [V]",
+    "GPU PCIe +12V 输入电压 [V]",
+    "GPU 16-pin HVPWR 电压 [V]",
+    "GPU Misc0 输入电压 [V]",
+]
+
+["GPU"."GPU 线路功率"]
+fields = [
+    "GPU Core (NVVDD) 输入功率 (总和) [W]",
+    "GPU FBVDD 输入功率 [W]",
+    "GPU PCIe +12V 输入功率 [W]",
+    "GPU 16-pin HVPWR 功率 [W]",
+    "GPU Misc0 输入功率 [W]",
+    "GPU 输入 PP 源 功率 (总和) [W]",
+    "GPU Core (NVVDD) 输出功率 [W]",
+    "GPU Core (NVVDD) 输出功率 [W]",
+]
+
+["GPU"."GPU D3D 使用率"]
+fields = [
+    "GPU D3D 使用率 [%]",
+    "GPU Video Decode 0 使用率 [%]",
+    "GPU Video Encode 0 使用率 [%]",
+    "GPU Video Encode 1 使用率 [%]",
+    "GPU VR 使用率 [%]",
+]
+
+["GPU"."GPU 性能受限"]
+fields = [
+    "性能受限 - 功率 [Yes/No]",
+    "性能受限 - 过热 [Yes/No]",
+    "性能受限 - 可靠性电压 [Yes/No]",
+    "性能受限 - 最大操作电压 [Yes/No]",
+    "性能受限 - 使用率 [Yes/No]",
+    "性能受限 - SLI GPUBoost Sync [Yes/No]",
+]
+
+["PresentMon"]
+fields = [
+    "帧率 (Presented) [FPS]",
+    "帧率 (Displayed) [FPS]",
+    "帧时间 [ms]",
+    "GPU Busy [ms]",
+    "GPU Wait [ms]",
+    "CPU Busy [ms]",
+    "CPU Wait [ms]",
+]
+
+["网络"]
+fields = ["下载总计 [MB]", "上传总计 [MB]", "当前下载速度 [KB/s]", "当前上传速度 [KB/s]"]
+
+["Windows Hardware Errors"]
+fields = ["错误总数 []"]
