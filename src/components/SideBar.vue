@@ -1,7 +1,6 @@
 <template>
   <n-menu
       v-model:value="activeKey"
-      :collapsed="collapsed"
       :collapsed-width="64"
       :collapsed-icon-size="22"
       :options="menuOptions"
@@ -94,7 +93,7 @@ function convertToMenuOptions(
           // TODO: support custom icon
         };
         if (value && typeof value === "object") {
-          const leaves = Object.entries(value)
+          const leaves: MenuOption[] = Object.entries(value)
               .filter(([k, v]) => k !== 'children' && typeof v !== 'object')
               .map(([subName]) => ({
                 label: subName,
@@ -124,8 +123,6 @@ onMounted(async () => {
 emitter.on('data-loaded', () => {
   getLogData()
 })
-
-const props = defineProps({collapsed: Boolean});
 </script>
 
 <style scoped>

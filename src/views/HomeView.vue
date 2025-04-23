@@ -12,7 +12,7 @@
             @collapse="collapsed = true"
             @expand="collapsed = false"
         >
-          <SideBar :collapsed="collapsed"/>
+          <SideBar/>
         </n-layout-sider>
         <n-layout-content>
           <router-view/>
