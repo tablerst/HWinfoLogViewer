@@ -47,27 +47,42 @@ fn get_data_by_key(key: String) -> String {
 }
 
 pub fn find_key_in_group(group: &HashMap<String, DataGroup>, key: &str) -> Vec<DataGroup> {
-    let mut found: Vec<DataGroup> = Vec::new();
-
-    let mut new_group = DataGroup::new();
-
+    let mut found = Vec::new();
+    
+    // Handle top-level data
     if let Some(base_data) = group.get("base") {
-        // If there is base data, return it directly
-        new_group.fields.extend(base_data.fields.clone());
+        found.extend(search_in_group(group, key, Some(base_data)));
+    } else {
+        found.extend(search_in_group(group, key, None));
     }
 
-    // 1. Check if the current group contains the key in its fields
+    found
+}
+
+fn search_in_group(
+    group: &HashMap<String, DataGroup>,
+    key: &str,
+    base_data: Option<&DataGroup>
+) -> Vec<DataGroup> {
+    let mut found = Vec::new();
+    let mut new_group = DataGroup::new();
+    
+    // slove base_data
+    if let Some(base_data) = base_data {
+        new_group.fields.extend(base_data.fields.clone());
+    }
+    
+    // 1. search if current group contains key
     for data_group in group.values() {
-        println!("DataGroup: {:?}", data_group);
         if let Some(value) = data_group.fields.get(key) {
             new_group.fields.insert(key.to_string(), value.clone());
             found.push(new_group.clone());
         }
     }
-
-    // 2. Check if the current group contains the key in its children
+    
+    // 2. recursively search child groups
     for child in group.values() {
-        found.extend(find_key_in_group(&child.children, key));
+        found.extend(search_in_group(&child.children, key, Some(&new_group)));
     }
 
     found
