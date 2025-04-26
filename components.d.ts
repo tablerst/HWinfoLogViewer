@@ -8,11 +8,16 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    NCard: typeof import('naive-ui')['NCard']
+    NCol: typeof import('naive-ui')['NCol']
+    NConfigProvider: typeof import('naive-ui')['NConfigProvider']
     NLayout: typeof import('naive-ui')['NLayout']
     NLayoutContent: typeof import('naive-ui')['NLayoutContent']
     NLayoutSider: typeof import('naive-ui')['NLayoutSider']
     NMenu: typeof import('naive-ui')['NMenu']
+    NRow: typeof import('naive-ui')['NRow']
     NSpace: typeof import('naive-ui')['NSpace']
+    NStatistic: typeof import('naive-ui')['NStatistic']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     SensorChart: typeof import('./src/components/SensorChart.vue')['default']
