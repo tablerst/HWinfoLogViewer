@@ -67,7 +67,8 @@ import {UniversalTransition} from 'echarts/features';
 import {CanvasRenderer} from 'echarts/renderers';
 import {useRoute} from 'vue-router'
 import {invoke} from '@tauri-apps/api/core';
-import {NCard, NCol, NRow, NStatistic} from 'naive-ui';
+import {NCard, NCol, NRow, NStatistic, useMessage} from 'naive-ui';
+import {formatError} from '../utils/formatError'
 
 echarts.use([
   TooltipComponent,
@@ -98,6 +99,7 @@ const route = useRoute();
 const fieldKey = route.params.fieldKey as string;
 const chartRef = ref<HTMLElement | null>(null);
 let chartInstance: echarts.ECharts | null = null;
+const message = useMessage();
 
 // Data for card
 const stats = reactive({
@@ -111,13 +113,28 @@ const stats = reactive({
 const extractFormattedName = (key: string) => key.split('-').pop()!.replace(/_/g, ' ');
 
 const getData = async (rawKey: string): Promise<any[]> => {
+  const formattedName = extractFormattedName(rawKey);
+  const pending = message.loading(`正在加载「${formattedName}」数据…`, {duration: 0});
   try {
-    const res = await invoke<string>('get_data_by_key', {key: extractFormattedName(rawKey)});
-    const data = JSON.parse(res);
+    const res = await invoke<string>('get_data_by_key', {key: formattedName});
+    let data: unknown;
+    try {
+      data = JSON.parse(res);
+    } catch (err) {
+      pending.destroy();
+      message.error(`解析「${formattedName}」数据失败：${formatError(err)}`);
+      return [];
+    }
     console.log('获取的数据:', data);
-    return data as any[];
+
+    pending.destroy();
+    const arr = Array.isArray(data) ? (data as any[]) : [];
+    message.success(`已加载「${formattedName}」数据（${arr.length} 条）`);
+    return arr;
   } catch (err) {
+    pending.destroy();
     console.error('拉取传感器数据失败', err);
+    message.error(`加载「${formattedName}」数据失败：${formatError(err)}`);
     return [];
   }
 };

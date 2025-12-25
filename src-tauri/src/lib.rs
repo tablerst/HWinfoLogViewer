@@ -2,10 +2,8 @@ use crate::data_processor::DataProcessor;
 use crate::models::{DataGroup, GroupsConfig};
 use backtrace::Backtrace;
 use lazy_static::lazy_static;
-use log::log;
 use notify::{RecommendedWatcher, RecursiveMode, Watcher};
 use std::collections::HashMap;
-use std::ops::Deref;
 use std::sync::mpsc::channel;
 use std::sync::RwLock;
 
@@ -16,26 +14,49 @@ pub mod models;
 
 #[tauri::command]
 fn load_csv(path: String) -> Result<(), String> {
-    println!("Starting CSV processing..., path: {:?}", path);
-    let processor = DataProcessor::new(GLOBAL_CONFIG.read().unwrap().clone());
+    log::info!("Starting CSV processing..., path: {:?}", path);
+    let config = GLOBAL_CONFIG
+        .read()
+        .map_err(|e| format!("读取配置失败（锁已污染）: {e}"))?
+        .clone();
+    let processor = DataProcessor::new(config);
     match processor.process_csv_file(&path) {
         Ok(result) => {
-            *GLOBAL_CACHE.write().unwrap() = result;
+            *GLOBAL_CACHE
+                .write()
+                .map_err(|e| format!("更新缓存失败（锁已污染）: {e}"))? = result;
             start_csv_watcher(path.clone());
+            log::info!("CSV processed successfully: {:?}", path);
             Ok(())
         }
-        Err(e) => Err(format!("CSV 处理失败: {:?}", e)),
+        Err(e) => {
+            log::error!("CSV 处理失败, path={:?}, err={:?}", path, e);
+            Err(format!("CSV 处理失败（{path}）: {e}"))
+        }
     }
 }
 
 #[tauri::command]
-fn get_data() -> String {
-    serde_json::to_string(&GLOBAL_CACHE.read().unwrap().clone()).unwrap()
+fn get_data() -> Result<String, String> {
+    let cache = GLOBAL_CACHE
+        .read()
+        .map_err(|e| format!("读取缓存失败（锁已污染）: {e}"))?
+        .clone();
+    serde_json::to_string(&cache).map_err(|e| {
+        log::error!("序列化缓存失败: {e}");
+        format!("序列化缓存失败: {e}")
+    })
 }
 
 #[tauri::command]
-fn get_data_by_key(key: String) -> String {
-    let cache = GLOBAL_CACHE.read().unwrap();
+fn get_data_by_key(key: String) -> Result<String, String> {
+    if key.trim().is_empty() {
+        return Err("key 不能为空".to_string());
+    }
+
+    let cache = GLOBAL_CACHE
+        .read()
+        .map_err(|e| format!("读取缓存失败（锁已污染）: {e}"))?;
     let mut result: Vec<DataGroup> = Vec::new();
 
     for group in cache.iter() {
@@ -43,7 +64,10 @@ fn get_data_by_key(key: String) -> String {
         result.extend(find_key_in_group(group, &key));
     }
 
-    serde_json::to_string(&result).unwrap()
+    serde_json::to_string(&result).map_err(|e| {
+        log::error!("序列化 key={:?} 的结果失败: {e}", key);
+        format!("序列化结果失败: {e}")
+    })
 }
 
 pub fn find_key_in_group(group: &HashMap<String, DataGroup>, key: &str) -> Vec<DataGroup> {
@@ -99,11 +123,18 @@ lazy_static! {
 fn start_csv_watcher(csv_path: String) {
     std::thread::spawn(move || {
         let (tx, rx) = channel();
-        let mut watcher: RecommendedWatcher =
-            RecommendedWatcher::new(tx, notify::Config::default()).expect("初始化CSV监听失败");
-        watcher
-            .watch(csv_path.as_ref(), RecursiveMode::NonRecursive)
-            .expect("监听CSV文件失败");
+        let mut watcher: RecommendedWatcher = match RecommendedWatcher::new(tx, notify::Config::default()) {
+            Ok(w) => w,
+            Err(e) => {
+                log::error!("初始化 CSV 监听失败: {e}");
+                return;
+            }
+        };
+
+        if let Err(e) = watcher.watch(std::path::Path::new(&csv_path), RecursiveMode::NonRecursive) {
+            log::error!("监听 CSV 文件失败（{}）: {e}", csv_path);
+            return;
+        }
 
         for res in rx {
             match res {
@@ -112,12 +143,29 @@ fn start_csv_watcher(csv_path: String) {
                         if let Some(p) = path.to_str() {
                             log::info!("检测到 CSV 更新: {:?}", p);
                             // 重新处理 CSV 并更新缓存
-                            let config = GLOBAL_CONFIG.read().unwrap().clone();
-                            if let Ok(result) = DataProcessor::new(config).process_csv_file(p) {
-                                *GLOBAL_CACHE.write().unwrap() = result;
-                                log::info!("CSV 缓存已更新");
-                            } else {
-                                log::error!("CSV 重新处理失败: {:?}", p);
+                            let config = match GLOBAL_CONFIG.read() {
+                                Ok(cfg) => cfg.clone(),
+                                Err(e) => {
+                                    log::error!("读取配置失败（锁已污染），跳过本次重载: {e}");
+                                    continue;
+                                }
+                            };
+
+                            match DataProcessor::new(config).process_csv_file(p) {
+                                Ok(result) => {
+                                    match GLOBAL_CACHE.write() {
+                                        Ok(mut cache) => {
+                                            *cache = result;
+                                            log::info!("CSV 缓存已更新");
+                                        }
+                                        Err(e) => {
+                                            log::error!("更新缓存失败（锁已污染）: {e}");
+                                        }
+                                    }
+                                }
+                                Err(err) => {
+                                    log::error!("CSV 重新处理失败（{}）: {err}", p);
+                                }
                             }
                         }
                     }
@@ -133,11 +181,18 @@ fn start_csv_watcher(csv_path: String) {
 
 fn start_config_watcher() {
     let (tx, rx) = channel();
-    let mut watcher: RecommendedWatcher =
-        RecommendedWatcher::new(tx, notify::Config::default()).expect("初始化文件监听失败");
-    watcher
-        .watch("config/groups.toml".as_ref(), RecursiveMode::NonRecursive)
-        .expect("监听文件失败");
+    let mut watcher: RecommendedWatcher = match RecommendedWatcher::new(tx, notify::Config::default()) {
+        Ok(w) => w,
+        Err(e) => {
+            log::error!("初始化配置文件监听失败: {e}");
+            return;
+        }
+    };
+
+    if let Err(e) = watcher.watch(std::path::Path::new("config/groups.toml"), RecursiveMode::NonRecursive) {
+        log::error!("监听配置文件失败: {e}");
+        return;
+    }
 
     std::thread::spawn(move || {
         for res in rx {
@@ -146,14 +201,25 @@ fn start_config_watcher() {
                     for path in &event.paths {
                         if path.ends_with("groups.toml") && event.kind.is_modify() {
                             // Load the new configuration
-                            let new_cfg = GroupsConfig::load_from_file("config/groups.toml")
-                                .expect("重新加载配置失败");
-                            *GLOBAL_CONFIG.write().unwrap() = new_cfg;
+                            match GroupsConfig::load_from_file("config/groups.toml") {
+                                Ok(new_cfg) => match GLOBAL_CONFIG.write() {
+                                    Ok(mut cfg) => {
+                                        *cfg = new_cfg;
+                                        log::info!("配置已重新加载");
+                                    }
+                                    Err(e) => {
+                                        log::error!("写入新配置失败（锁已污染）: {e}");
+                                    }
+                                },
+                                Err(err) => {
+                                    log::error!("重新加载配置失败: {err}");
+                                }
+                            }
                         }
                     }
                 }
                 Err(err) => {
-                    eprintln!("文件监听错误: {:?}", err);
+                    log::error!("配置文件监听错误: {err}");
                 }
                 _ => {}
             }

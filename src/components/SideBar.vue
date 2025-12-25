@@ -14,10 +14,11 @@
 <script setup lang="ts">
 import {Component, h, onMounted, ref} from 'vue';
 import {useRouter} from 'vue-router';
-import {NIcon} from 'naive-ui';
+import {NIcon, useMessage} from 'naive-ui';
 import {BarChartOutline, HardwareChipOutline, HomeOutline, SettingsOutline} from '@vicons/ionicons5';
 import {invoke} from '@tauri-apps/api/core';
 import {emitter} from "../utils/eventBus.ts";
+import {formatError} from '../utils/formatError'
 
 interface MenuOption {
   label: string;
@@ -32,6 +33,7 @@ function renderIcon(icon: Component) {
 
 const activeKey = ref('home');
 const router = useRouter();
+const message = useMessage();
 const menuOptions = ref<MenuOption[]>([
   {
     label: '首页',
@@ -63,18 +65,39 @@ function handleMenuSelect(key: string) {
 }
 
 async function getLogData() {
+  const pending = message.loading('正在获取数据…', {duration: 0});
   try {
     const raw = await invoke<string>('get_data');
-    const parsed = JSON.parse(raw);
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (err) {
+      throw new Error(`解析后端返回失败：${formatError(err)}`);
+    }
+
     console.log('获取的数据:', parsed);
 
-    const tree = Array.isArray(parsed) ? parsed[0] : parsed;
+    if (Array.isArray(parsed) && parsed.length === 0) {
+      // 清空传感器菜单
+      menuOptions.value = menuOptions.value.map(opt =>
+          opt.key === 'sensor-data' ? {...opt, children: []} : opt
+      );
+      pending.destroy();
+      message.info('暂无数据，请先上传并处理 CSV');
+      return;
+    }
+
+    const tree = Array.isArray(parsed) ? parsed[0] : (parsed as Record<string, any>);
     const sensorChildren = convertToMenuOptions(tree);
     menuOptions.value = menuOptions.value.map(opt =>
         opt.key === 'sensor-data' ? {...opt, children: sensorChildren} : opt
     );
-  } catch (e) {
-    console.error('获取数据失败:', e);
+    pending.destroy();
+    message.success('数据加载成功');
+  } catch (err) {
+    console.error('获取数据失败:', err);
+    pending.destroy();
+    message.error(`获取数据失败：${formatError(err)}`);
   }
 }
 
@@ -111,17 +134,12 @@ function convertToMenuOptions(
 }
 
 
-onMounted(async () => {
-  const raw = await invoke<string>('get_data')
-  const parsed = JSON.parse(raw)
-  if (Array.isArray(parsed) && parsed.length > 0) {
-    await getLogData()
-    console.log('获取数据成功')
-  }
+onMounted(() => {
+  void getLogData();
 })
 
 emitter.on('data-loaded', () => {
-  getLogData()
+  void getLogData();
 })
 </script>
 
