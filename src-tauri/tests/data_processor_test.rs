@@ -1,5 +1,3 @@
-use encoding_rs;
-
 use hwinfo_log_viewer_lib::data_processor::DataProcessor;
 use hwinfo_log_viewer_lib::find_key_in_group;
 use hwinfo_log_viewer_lib::models::GroupsConfig;
@@ -39,6 +37,63 @@ fn test_process_csv_file() -> Result<(), Box<dyn std::error::Error>> {
     let result = processor.process_csv_file("data/1.CSV")?;
     // 访问示例数据
     println!("Result: {:?}", result);
+
+    Ok(())
+}
+
+#[test]
+fn test_process_csv_file_with_tail_group_overlay() -> Result<(), Box<dyn std::error::Error>> {
+    let config = GroupsConfig::load_from_file("config/groups.toml").unwrap();
+    let processor = DataProcessor::new(config);
+
+    let result = processor.process_csv_file("data/min_tail_group.CSV")?;
+    assert!(!result.is_empty());
+
+    let first = &result[0];
+
+    // Date/Time must stay in base
+    assert!(first.contains_key("base"));
+
+    // CPU group should be overridden by CSV parent title
+    assert!(first.contains_key("CPU [#0]: AMD Ryzen 9 5950X"));
+
+    // Drive group should be overridden as well; note the unquoted comma inside brackets
+    assert!(first.contains_key("Drive: Lexar SSD NM620 2TB [E:, F:]"));
+
+    Ok(())
+}
+
+#[test]
+fn test_process_csv_file_invalid_mid_header_rejected() {
+    let config = GroupsConfig::load_from_file("config/groups.toml").unwrap();
+    let processor = DataProcessor::new(config);
+
+    let err = processor
+        .process_csv_file("data/invalid_mid_header.CSV")
+        .expect_err("should reject CSV files that repeat the subtitle header in the middle");
+
+    let msg = err.to_string();
+    assert!(
+        msg.contains("重复表头") || msg.contains("子标题表头"),
+        "unexpected error message: {msg}"
+    );
+}
+
+#[test]
+fn test_process_csv_file_mid_log_extra_column_tolerated() -> Result<(), Box<dyn std::error::Error>> {
+    let config = GroupsConfig::load_from_file("config/groups.toml").unwrap();
+    let processor = DataProcessor::new(config);
+
+    // This fixture simulates HWiNFO adding a sensor mid-log without rewriting the header,
+    // resulting in one extra column from that point onward.
+    let result = processor.process_csv_file("data/mid_log_extra_column.CSV")?;
+    assert_eq!(result.len(), 3);
+
+    for row in &result {
+        let base = row.get("base").expect("base group should exist");
+        assert!(base.fields.contains_key("Date"));
+        assert!(base.fields.contains_key("Time"));
+    }
 
     Ok(())
 }
