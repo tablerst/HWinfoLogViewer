@@ -74,6 +74,27 @@
             <n-checkbox v-model:checked="chartPrefs.showArea" size="small" :disabled="!hasData">面积</n-checkbox>
             <n-checkbox v-model:checked="chartPrefs.connectNulls" size="small" :disabled="!hasData">连线缺失</n-checkbox>
           </div>
+
+          <div class="toolbar-group">
+            <span class="toolbar-label">预警</span>
+            <n-checkbox v-model:checked="chartPrefs.warnEnabled" size="small" :disabled="!hasData">启用</n-checkbox>
+            <n-input-number
+              v-model:value="chartPrefs.warnMin"
+              size="small"
+              clearable
+              :disabled="!hasData || !chartPrefs.warnEnabled"
+              placeholder="下限"
+              class="toolbar-input-number"
+            />
+            <n-input-number
+              v-model:value="chartPrefs.warnMax"
+              size="small"
+              clearable
+              :disabled="!hasData || !chartPrefs.warnEnabled"
+              placeholder="上限"
+              class="toolbar-input-number"
+            />
+          </div>
         </div>
 
         <div v-if="hasData" class="chart-meta">
@@ -120,7 +141,7 @@ import {UniversalTransition} from 'echarts/features';
 import {CanvasRenderer} from 'echarts/renderers';
 import {useRoute} from 'vue-router'
 import {invoke} from '@tauri-apps/api/core';
-import {NButton, NCard, NCheckbox, NCol, NDatePicker, NEmpty, NRow, NSelect, NStatistic, useMessage} from 'naive-ui';
+import {NButton, NCard, NCheckbox, NCol, NDatePicker, NEmpty, NInputNumber, NRow, NSelect, NStatistic, useMessage} from 'naive-ui';
 import {formatError} from '../utils/formatError'
 import {parseHwinfoDateTimeToMs, formatDateTimeForTooltip, formatTimeTick} from '../utils/hwinfoDateTime'
 import {useChartPrefsStore} from '../stores/chartPrefs'
@@ -445,9 +466,16 @@ const renderChart = async () => {
   }
 
   const windowValues: number[] = [];
+  let minPoint: {ts: number; v: number} | null = null;
+  let maxPoint: {ts: number; v: number} | null = null;
   for (let i = i0; i < i1; i++) {
     const v = points[i][1];
-    if (typeof v === 'number' && Number.isFinite(v)) windowValues.push(v);
+    if (typeof v === 'number' && Number.isFinite(v)) {
+      windowValues.push(v);
+      const ts = points[i][0];
+      if (!minPoint || v < minPoint.v) minPoint = {ts, v};
+      if (!maxPoint || v > maxPoint.v) maxPoint = {ts, v};
+    }
   }
 
   if (!windowValues.length) {
@@ -494,6 +522,153 @@ const renderChart = async () => {
     : points;
   const samplingSafe = (hasNulls && !chartPrefs.connectNulls) ? undefined : samplingEffective;
 
+  const warnRange = (() => {
+    if (!chartPrefs.warnEnabled) return null;
+    const min = chartPrefs.warnMin;
+    const max = chartPrefs.warnMax;
+    if (typeof min !== 'number' || !Number.isFinite(min)) return null;
+    if (typeof max !== 'number' || !Number.isFinite(max)) return null;
+    if (min >= max) return null;
+    // log axis requires positive values
+    if (yAxisType === 'log' && (min <= 0 || max <= 0)) return null;
+    return {min, max};
+  })();
+
+  const COLOR_NORMAL = '#2080f0';
+  const COLOR_LOW = '#18a058';
+  const COLOR_HIGH = '#d03050';
+
+  const markPointData = (() => {
+    const arr: any[] = [];
+    if (maxPoint) {
+      arr.push({
+        name: '最大值',
+        coord: [maxPoint.ts, maxPoint.v],
+        value: maxPoint.v,
+        itemStyle: {color: COLOR_HIGH}
+      });
+    }
+    if (minPoint) {
+      arr.push({
+        name: '最小值',
+        coord: [minPoint.ts, minPoint.v],
+        value: minPoint.v,
+        itemStyle: {color: COLOR_LOW}
+      });
+    }
+    return arr;
+  })();
+
+  const baseSeriesCommon = {
+    type: 'line',
+    smooth: chartPrefs.smooth,
+    connectNulls: chartPrefs.connectNulls,
+    showSymbol: false,
+    symbol: 'circle',
+    symbolSize: 6,
+    sampling: samplingSafe as any,
+    lineStyle: {width: 1},
+  } as const;
+
+  const buildWarnSeries = () => {
+    if (!warnRange) {
+      return [
+        {
+          name: seriesName,
+          data: seriesData,
+          ...baseSeriesCommon,
+          itemStyle: {color: COLOR_NORMAL},
+          areaStyle: showArea
+            ? {
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                  {offset: 0, color: 'rgba(32, 128, 240, 0.22)'},
+                  {offset: 1, color: 'rgba(32, 128, 240, 0.01)'}
+                ])
+              }
+            : null,
+        }
+      ];
+    }
+
+    const below: Point[] = [];
+    const mid: Point[] = [];
+    const above: Point[] = [];
+    for (const p of seriesData as Point[]) {
+      const ts = p[0];
+      const v = p[1];
+      if (typeof v !== 'number' || !Number.isFinite(v)) {
+        below.push([ts, null]);
+        mid.push([ts, null]);
+        above.push([ts, null]);
+        continue;
+      }
+      if (v < warnRange.min) {
+        below.push([ts, v]);
+        mid.push([ts, null]);
+        above.push([ts, null]);
+      } else if (v > warnRange.max) {
+        below.push([ts, null]);
+        mid.push([ts, null]);
+        above.push([ts, v]);
+      } else {
+        below.push([ts, null]);
+        mid.push([ts, v]);
+        above.push([ts, null]);
+      }
+    }
+
+    return [
+      {
+        name: seriesName,
+        data: mid,
+        ...baseSeriesCommon,
+        itemStyle: {color: COLOR_NORMAL},
+        areaStyle: showArea
+          ? {
+              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                {offset: 0, color: 'rgba(32, 128, 240, 0.22)'},
+                {offset: 1, color: 'rgba(32, 128, 240, 0.01)'}
+              ])
+            }
+          : null,
+      },
+      {
+        name: `${seriesName}（低于下限）`,
+        data: below,
+        ...baseSeriesCommon,
+        itemStyle: {color: COLOR_LOW}
+      },
+      {
+        name: `${seriesName}（高于上限）`,
+        data: above,
+        ...baseSeriesCommon,
+        itemStyle: {color: COLOR_HIGH}
+      }
+    ];
+  };
+
+  const markLine = warnRange
+    ? {
+        symbol: 'none',
+        label: {
+          show: true,
+          formatter: (p: any) => {
+            const name = p?.name ?? '';
+            const v = p?.value;
+            const valText = (typeof v === 'number' && Number.isFinite(v))
+              ? formatValueWithUnit(v, unit)
+              : '-';
+            return name ? `${name}: ${valText}` : `${valText}`;
+          }
+        },
+        lineStyle: {type: 'dashed', width: 1},
+        data: [
+          {name: '下限', yAxis: warnRange.min, lineStyle: {color: COLOR_LOW}},
+          {name: '上限', yAxis: warnRange.max, lineStyle: {color: COLOR_HIGH}}
+        ]
+      }
+    : undefined;
+
   chartInstance.setOption({
     animation: shouldAnimate,
     grid: {
@@ -514,8 +689,14 @@ const renderChart = async () => {
         label: {backgroundColor: '#666'}
       },
       formatter: (params: any) => {
-        const p = Array.isArray(params) ? params[0] : params;
-        const value = p?.value;
+        const ps = Array.isArray(params) ? params : [params];
+        const picked = ps.find((x: any) => {
+          const value = x?.value;
+          const v = Array.isArray(value) ? value[1] : undefined;
+          return typeof v === 'number' && Number.isFinite(v);
+        }) ?? ps[0];
+
+        const value = picked?.value;
         const ts = Array.isArray(value) ? value[0] : undefined;
         const v = Array.isArray(value) ? value[1] : undefined;
         const timeText = typeof ts === 'number' ? formatDateTimeForTooltip(ts) : '-';
@@ -584,49 +765,33 @@ const renderChart = async () => {
       nameGap: 10,
       axisLabel: {color: '#666'}
     },
-    series: [{
-      name: seriesName,
-      data: seriesData,
-      type: 'line',
-      smooth: chartPrefs.smooth,
-      connectNulls: chartPrefs.connectNulls,
-      showSymbol: false,
-      symbol: 'circle',
-      symbolSize: 6,
-      sampling: samplingSafe as any,
-      lineStyle: {width: 1},
-      itemStyle: {color: '#2080f0'},
-      areaStyle: showArea
-        ? {
-            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              {offset: 0, color: 'rgba(32, 128, 240, 0.22)'},
-              {offset: 1, color: 'rgba(32, 128, 240, 0.01)'}
-            ])
-          }
-        : null,
-      markPoint: {
-        label: {
-          show: false
-        },
-        emphasis: {
+    series: (buildWarnSeries() as any[]).map((s, idx) => {
+      // Put markLine/markPoint on the first (main) series so they always appear.
+      if (idx !== 0) return s;
+      return {
+        ...s,
+        markLine,
+        markPoint: {
           label: {
-            show: true,
-            formatter: (p: any) => {
-              const name = p?.name ?? '';
-              const value = p?.value;
-              const valText = typeof value === 'number' && Number.isFinite(value)
-                ? formatValueByUnit(value, unit)
-                : '-';
-              return name ? `${name}: ${valText}` : `${valText}`;
+            show: false
+          },
+          emphasis: {
+            label: {
+              show: true,
+              formatter: (p: any) => {
+                const name = p?.name ?? '';
+                const value = p?.value;
+                const valText = typeof value === 'number' && Number.isFinite(value)
+                  ? formatValueByUnit(value, unit)
+                  : '-';
+                return name ? `${name}: ${valText}` : `${valText}`;
+              }
             }
-          }
-        },
-        data: [
-          {type: 'max', name: '最大值', itemStyle: {color: '#d03050'}},
-          {type: 'min', name: '最小值', itemStyle: {color: '#18a058'}}
-        ]
-      }
-    }]
+          },
+          data: markPointData
+        }
+      };
+    })
   } as EChartsOption, true);
 
   chartReady.value = true;
@@ -726,7 +891,17 @@ watch(
 )
 
 watch(
-  () => [chartPrefs.sampling, chartPrefs.smooth, chartPrefs.showArea, chartPrefs.connectNulls, chartPrefs.yAxisScale, pointsAll.value.length],
+  () => [
+    chartPrefs.sampling,
+    chartPrefs.smooth,
+    chartPrefs.showArea,
+    chartPrefs.connectNulls,
+    chartPrefs.yAxisScale,
+    chartPrefs.warnEnabled,
+    chartPrefs.warnMin,
+    chartPrefs.warnMax,
+    pointsAll.value.length
+  ],
   async () => {
     await renderChart();
   }
@@ -841,6 +1016,10 @@ onUnmounted(() => {
 
 .toolbar-select--narrow {
   min-width: 120px;
+}
+
+.toolbar-input-number {
+  width: 120px;
 }
 
 .chart-meta {

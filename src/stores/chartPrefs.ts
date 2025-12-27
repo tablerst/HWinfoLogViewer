@@ -22,6 +22,11 @@ export const useChartPrefsStore = defineStore('chartPrefs', () => {
   const sampling = ref<SamplingMode>('auto')
   const yAxisScale = ref<YAxisScaleType>('linear')
 
+  // Threshold warning
+  const warnEnabled = ref(false)
+  const warnMin = ref<number | null>(null)
+  const warnMax = ref<number | null>(null)
+
   // Load persisted values
   const persisted = safeParsePrefs(localStorage.getItem(STORAGE_KEY))
   if (persisted && typeof persisted === 'object') {
@@ -30,6 +35,12 @@ export const useChartPrefsStore = defineStore('chartPrefs', () => {
     if (typeof persisted.connectNulls === 'boolean') connectNulls.value = persisted.connectNulls
     if (typeof persisted.sampling === 'string') sampling.value = persisted.sampling
     if (typeof persisted.yAxisScale === 'string') yAxisScale.value = persisted.yAxisScale
+
+    if (typeof persisted.warnEnabled === 'boolean') warnEnabled.value = persisted.warnEnabled
+    if (persisted.warnMin == null) warnMin.value = null
+    else if (typeof persisted.warnMin === 'number' && Number.isFinite(persisted.warnMin)) warnMin.value = persisted.warnMin
+    if (persisted.warnMax == null) warnMax.value = null
+    else if (typeof persisted.warnMax === 'number' && Number.isFinite(persisted.warnMax)) warnMax.value = persisted.warnMax
   }
 
   watch(
@@ -38,7 +49,10 @@ export const useChartPrefsStore = defineStore('chartPrefs', () => {
       showArea: showArea.value,
       connectNulls: connectNulls.value,
       sampling: sampling.value,
-      yAxisScale: yAxisScale.value
+      yAxisScale: yAxisScale.value,
+      warnEnabled: warnEnabled.value,
+      warnMin: warnMin.value,
+      warnMax: warnMax.value
     }),
     (v) => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(v))
@@ -52,6 +66,10 @@ export const useChartPrefsStore = defineStore('chartPrefs', () => {
     connectNulls.value = false
     sampling.value = 'auto'
     yAxisScale.value = 'linear'
+
+    warnEnabled.value = false
+    warnMin.value = null
+    warnMax.value = null
   }
 
   return {
@@ -60,6 +78,9 @@ export const useChartPrefsStore = defineStore('chartPrefs', () => {
     connectNulls,
     sampling,
     yAxisScale,
+    warnEnabled,
+    warnMin,
+    warnMax,
     reset
   }
 })
