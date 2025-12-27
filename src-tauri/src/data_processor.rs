@@ -3,6 +3,8 @@ use std::error::Error;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Cursor};
 
+use chrono::{Local, NaiveDate, NaiveDateTime, NaiveTime, TimeZone};
+use chrono::offset::LocalResult;
 use csv::{ReaderBuilder, StringRecord};
 
 use super::models::{DataGroup, FieldGroup, GroupsConfig};
@@ -148,14 +150,28 @@ impl DataProcessor {
 
         let mut all_records = Vec::new();
         let mut align_state = RecordAlignmentState::default();
+        let mut last_date: Option<NaiveDate> = None;
         for result in rdr.records() {
             let record = result?;
             let processed_record = Self::normalize_and_process_record(&record, headers.len(), &mut align_state)?;
+
+            // Prefer parsing timestamp from the original Date/Time columns (always the first two columns in HWiNFO CSV).
+            let date_str = processed_record.get(0).map(|s| s.as_str()).unwrap_or("");
+            let time_str = processed_record.get(1).map(|s| s.as_str()).unwrap_or("");
+            let ts_ms = Self::parse_hwinfo_datetime_to_timestamp_ms(date_str, time_str, &mut last_date);
 
             let mut data_groups = HashMap::new();
             for (header, value) in headers.iter().zip(processed_record.iter()) {
                 if let Some(path) = field_mappings.get(header) {
                     self.insert_field(&mut data_groups, path, header, value.to_string());
+                }
+            }
+
+            // Inject computed timestamp into base group so the frontend can use it directly.
+            if let Some(ts_ms) = ts_ms {
+                if let Some(base) = data_groups.get_mut("base") {
+                    base.fields
+                        .insert("Timestamp".to_string(), ts_ms.to_string());
                 }
             }
 
@@ -560,5 +576,117 @@ impl DataProcessor {
         }
 
         mappings
+    }
+
+    /// Parse HWiNFO Date/Time strings and return a unix timestamp in milliseconds.
+    ///
+    /// - Date formats: D.M.YYYY / DD.MM.YYYY / D/M/YYYY / YYYY-M-D / etc.
+    /// - Time formats: HH:MM:SS[.mmm]
+    /// - If Date is empty, inherit the last successfully parsed date.
+    fn parse_hwinfo_datetime_to_timestamp_ms(
+        date_str: &str,
+        time_str: &str,
+        last_date: &mut Option<NaiveDate>,
+    ) -> Option<i64> {
+        let date_str = date_str.trim().trim_start_matches('\u{FEFF}');
+        let time_str = time_str.trim().trim_start_matches('\u{FEFF}');
+
+        let date = if date_str.is_empty() {
+            (*last_date)?
+        } else {
+            let d = Self::parse_hwinfo_date(date_str)?;
+            *last_date = Some(d);
+            d
+        };
+
+        let time = Self::parse_hwinfo_time(time_str)?;
+        let ndt = NaiveDateTime::new(date, time);
+
+        match Local.from_local_datetime(&ndt) {
+            LocalResult::Single(dt) => Some(dt.timestamp_millis()),
+            LocalResult::Ambiguous(dt, _) => Some(dt.timestamp_millis()),
+            LocalResult::None => None,
+        }
+    }
+
+    fn parse_hwinfo_date(s: &str) -> Option<NaiveDate> {
+        let s = s.trim();
+        if s.is_empty() {
+            return None;
+        }
+
+        let (sep, parts): (char, Vec<&str>) = if s.contains('.') {
+            ('.', s.split('.').collect())
+        } else if s.contains('/') {
+            ('/', s.split('/').collect())
+        } else if s.contains('-') {
+            ('-', s.split('-').collect())
+        } else {
+            return None;
+        };
+
+        if parts.len() != 3 {
+            return None;
+        }
+
+        let p0 = parts[0].trim();
+        let p1 = parts[1].trim();
+        let p2 = parts[2].trim();
+
+        let (y, m, d) = if sep == '-' && p0.len() == 4 {
+            // YYYY-M-D
+            (p0.parse::<i32>().ok()?, p1.parse::<u32>().ok()?, p2.parse::<u32>().ok()?)
+        } else if sep == '-' && p2.len() == 4 {
+            // D-M-YYYY
+            (p2.parse::<i32>().ok()?, p1.parse::<u32>().ok()?, p0.parse::<u32>().ok()?)
+        } else {
+            // Default: D.M.YYYY or D/M/YYYY
+            (p2.parse::<i32>().ok()?, p1.parse::<u32>().ok()?, p0.parse::<u32>().ok()?)
+        };
+
+        NaiveDate::from_ymd_opt(y, m, d)
+    }
+
+    fn parse_hwinfo_time(s: &str) -> Option<NaiveTime> {
+        let s = s.trim();
+        if s.is_empty() {
+            return None;
+        }
+        let parts: Vec<&str> = s.split(':').collect();
+        if parts.len() < 2 {
+            return None;
+        }
+        let h = parts.get(0)?.trim().parse::<u32>().ok()?;
+        let m = parts.get(1)?.trim().parse::<u32>().ok()?;
+
+        // Allow formats like HH:MM:SS.mmm or HH:MM:SS
+        let sec_part = parts.get(2).map(|v| v.trim()).unwrap_or("0");
+        let (sec_str, ms_str_opt) = if let Some((a, b)) = sec_part.split_once('.') {
+            (a, Some(b))
+        } else if let Some((a, b)) = sec_part.split_once(',') {
+            (a, Some(b))
+        } else {
+            (sec_part, None)
+        };
+        let s = sec_str.trim().parse::<u32>().ok()?;
+
+        let ms = match ms_str_opt {
+            None => 0u32,
+            Some(ms_raw) => {
+                let t = ms_raw.trim();
+                if t.is_empty() {
+                    0u32
+                } else {
+                    let n = t.parse::<u32>().ok()?;
+                    match t.len() {
+                        1 => n * 100,
+                        2 => n * 10,
+                        _ => n.min(999),
+                    }
+                }
+            }
+        };
+
+        NaiveTime::from_hms_milli_opt(h, m, s, ms)
     }
 }

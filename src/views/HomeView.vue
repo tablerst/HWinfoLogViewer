@@ -1,25 +1,21 @@
 <template>
-  <main class="container">
-    <n-space vertical>
-      <n-layout has-sider>
-        <n-layout-sider
-            bordered
-            collapse-mode="width"
-            :collapsed-width="64"
-            :width="240"
-            :collapsed="collapsed"
-            show-trigger
-            @collapse="collapsed = true"
-            @expand="collapsed = false"
-        >
-          <SideBar/>
-        </n-layout-sider>
-        <n-layout-content>
-          <router-view/>
-        </n-layout-content>
-      </n-layout>
-    </n-space>
-  </main>
+  <n-layout has-sider class="main-layout">
+    <n-layout-sider
+        bordered
+        collapse-mode="width"
+        :collapsed-width="64"
+        :width="240"
+        :collapsed="collapsed"
+        show-trigger
+        @collapse="collapsed = true"
+        @expand="collapsed = false"
+    >
+      <SideBar/>
+    </n-layout-sider>
+    <n-layout-content class="content-layout">
+      <router-view/>
+    </n-layout-content>
+  </n-layout>
 </template>
 
 <script setup lang="ts">
@@ -30,103 +26,21 @@ const collapsed = ref(false)
 </script>
 
 <style scoped>
-:root {
-  font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
-  font-size: 16px;
-  line-height: 24px;
-  font-weight: 400;
-
-  color: #0f0f0f;
-  background-color: #f6f6f6;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  -webkit-text-size-adjust: 100%;
+.main-layout {
+  height: 100vh;
 }
 
-.container {
-  margin: 0;
-  padding-top: 10vh;
+.content-layout {
+  padding: 24px;
+  background-color: #f5f7f9;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  text-align: center;
-  box-sizing: border-box;
-  height: 100vh;
-  overflow-y: hidden;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-
-a:hover {
-  color: #535bf2;
-}
-
-h1 {
-  text-align: center;
-}
-
-input,
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  color: #0f0f0f;
-  background-color: #ffffff;
-  transition: border-color 0.25s;
-  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
-}
-
-button {
-  cursor: pointer;
-}
-
-button:hover {
-  border-color: #396cd8;
-}
-
-button:active {
-  border-color: #396cd8;
-  background-color: #e8e8e8;
-}
-
-input,
-button {
-  outline: none;
-}
-
-#greet-input {
-  margin-right: 5px;
+  overflow: hidden;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    color: #f6f6f6;
-    background-color: #2f2f2f;
-  }
-
-  a:hover {
-    color: #24c8db;
-  }
-
-  input,
-  button {
-    color: #ffffff;
-    background-color: #0f0f0f98;
-  }
-
-  button:active {
-    background-color: #0f0f0f69;
+  .content-layout {
+    background-color: #101014;
   }
 }
-
 </style>
