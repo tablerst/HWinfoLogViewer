@@ -18,6 +18,7 @@ Sample CSV:
 - [x] Support uploading CSV files and visualizing the data as line charts
 - [x] Support data filtering and sorting
 - [x] Usability improvements, such as value display enhancements
-- [ ] Support axis scaling with dashed lines for max and min values
-- [ ] Support selecting and switching configuration files
+- [x] Support axis scaling with dashed lines for max and min values
+- [x] Support selecting and switching configuration files
 - [ ] Support multiple chart types (line charts, bar charts, pie charts, etc.)
+- [ ] Support merging and analyzing multiple data sources
