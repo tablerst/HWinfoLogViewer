@@ -1,17 +1,17 @@
 <!-- SensorChart.vue -->
 <template>
   <div class="sensor-chart-wrapper">
-    <n-card title="数据分析" size="small" bordered style="margin-bottom: 16px">
+    <n-card :title="analysisTitle" size="small" bordered style="margin-bottom: 16px">
       <n-row :gutter="12">
         <n-col :span="12" :m="6">
-          <n-statistic label="最小值" :value="stats.min" tabular-nums>
+          <n-statistic label="最小值" :value="minDisplay" tabular-nums>
             <template #prefix>
               <span style="color: #18a058; font-size: 0.8em">↓</span>
             </template>
           </n-statistic>
         </n-col>
         <n-col :span="12" :m="6">
-          <n-statistic label="最大值" :value="stats.max" tabular-nums>
+          <n-statistic label="最大值" :value="maxDisplay" tabular-nums>
             <template #prefix>
               <span style="color: #d03050; font-size: 0.8em">↑</span>
             </template>
@@ -21,7 +21,7 @@
           <n-statistic label="平均值" :value="avgDisplay" tabular-nums/>
         </n-col>
         <n-col :span="12" :m="6">
-          <n-statistic label="中位数" :value="stats.median" tabular-nums/>
+          <n-statistic label="中位数" :value="medianDisplay" tabular-nums/>
         </n-col>
       </n-row>
     </n-card>
@@ -124,6 +124,7 @@ import {NButton, NCard, NCheckbox, NCol, NDatePicker, NEmpty, NRow, NSelect, NSt
 import {formatError} from '../utils/formatError'
 import {parseHwinfoDateTimeToMs, formatDateTimeForTooltip, formatTimeTick} from '../utils/hwinfoDateTime'
 import {useChartPrefsStore} from '../stores/chartPrefs'
+import {parseSensorLabel, formatValueByUnit, formatValueWithUnit} from '../utils/sensorLabel'
 
 echarts.use([
   TooltipComponent,
@@ -187,7 +188,18 @@ const stats = reactive<{
   current: '-'
 });
 
-const avgDisplay = computed(() => (displayedCount.value > 0 ? stats.avg.toFixed(2) : '-'));
+const sensorMeta = computed(() => parseSensorLabel(sensorFieldName.value || ''));
+const sensorDisplayName = computed(() => sensorMeta.value.baseName || sensorFieldName.value || '数值');
+const sensorUnit = computed(() => sensorMeta.value.unit);
+const analysisTitle = computed(() => {
+  const u = sensorUnit.value;
+  return u ? `数据分析（单位：[${u}]）` : '数据分析';
+});
+
+const minDisplay = computed(() => (typeof stats.min === 'number' ? formatValueByUnit(stats.min, sensorUnit.value) : stats.min));
+const maxDisplay = computed(() => (typeof stats.max === 'number' ? formatValueByUnit(stats.max, sensorUnit.value) : stats.max));
+const medianDisplay = computed(() => (typeof stats.median === 'number' ? formatValueByUnit(stats.median, sensorUnit.value) : stats.median));
+const avgDisplay = computed(() => (displayedCount.value > 0 ? formatValueByUnit(stats.avg, sensorUnit.value) : '-'));
 
 const extractFormattedName = (key: string) => key.split('-').pop()!.replace(/_/g, ' ');
 
@@ -333,11 +345,20 @@ const getData = async (rawKey: string): Promise<any[]> => {
   }
 };
 
-function buildPoints(data: any[]): { points: Point[]; field: string; invalidTime: number; missingValue: number } {
+function buildPoints(
+  data: any[],
+  preferredField?: string
+): { points: Point[]; field: string; invalidTime: number; missingValue: number } {
   const first = data.find(Boolean);
-  const field = first
-    ? (Object.keys(first).find(k => k !== 'Time' && k !== 'Date') ?? '')
-    : '';
+  const isMetaKey = (k: string) => k === 'Time' || k === 'Date' || k === 'Timestamp' || k === 'timestamp' || k === 'ts';
+
+  const field = (() => {
+    if (preferredField && first && Object.prototype.hasOwnProperty.call(first, preferredField)) {
+      return preferredField;
+    }
+    if (!first) return '';
+    return Object.keys(first).find(k => !isMetaKey(k)) ?? '';
+  })();
 
   const points: Point[] = [];
   let invalidTime = 0;
@@ -462,7 +483,8 @@ const renderChart = async () => {
     return 'log' as const;
   })();
 
-  const seriesName = sensorFieldName.value || '数值';
+  const seriesName = sensorDisplayName.value || '数值';
+  const unit = sensorUnit.value;
   const showArea = chartPrefs.showArea;
   const shouldAnimate = countNumeric(points) < 2000;
 
@@ -497,7 +519,9 @@ const renderChart = async () => {
         const ts = Array.isArray(value) ? value[0] : undefined;
         const v = Array.isArray(value) ? value[1] : undefined;
         const timeText = typeof ts === 'number' ? formatDateTimeForTooltip(ts) : '-';
-        const valText = typeof v === 'number' && Number.isFinite(v) ? v : '-';
+        const valText = (typeof v === 'number' && Number.isFinite(v))
+          ? formatValueWithUnit(v, unit)
+          : '-';
         return `${timeText}<br/>${seriesName}：${valText}`;
       }
     },
@@ -555,6 +579,9 @@ const renderChart = async () => {
       type: yAxisType,
       scale: true,
       splitLine: {lineStyle: {type: 'dashed', color: '#eee'}},
+      name: unit ?? undefined,
+      nameTextStyle: {color: '#80868b'},
+      nameGap: 10,
       axisLabel: {color: '#666'}
     },
     series: [{
@@ -587,7 +614,9 @@ const renderChart = async () => {
             formatter: (p: any) => {
               const name = p?.name ?? '';
               const value = p?.value;
-              const valText = typeof value === 'number' && Number.isFinite(value) ? value : '-';
+              const valText = typeof value === 'number' && Number.isFinite(value)
+                ? formatValueByUnit(value, unit)
+                : '-';
               return name ? `${name}: ${valText}` : `${valText}`;
             }
           }
@@ -654,7 +683,7 @@ async function loadAndBuild(rawKey: string) {
   const formattedName = extractFormattedName(rawKey);
   sensorFieldName.value = formattedName;
 
-  const {points, field, invalidTime, missingValue} = buildPoints(rawData.value);
+  const {points, field, invalidTime, missingValue} = buildPoints(rawData.value, formattedName);
   invalidTimeCount.value = invalidTime;
   missingValueCount.value = missingValue;
   pointsAll.value = points;

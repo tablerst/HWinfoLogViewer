@@ -19,9 +19,10 @@ import {BarChartOutline, HardwareChipOutline, HomeOutline, SettingsOutline} from
 import {invoke} from '@tauri-apps/api/core';
 import {emitter} from "../utils/eventBus.ts";
 import {formatError} from '../utils/formatError'
+import {parseSensorLabel} from '../utils/sensorLabel'
 
 interface MenuOption {
-  label: string;
+  label: string | (() => any);
   key: string;
   icon?: Component;
   children?: MenuOption[];
@@ -118,11 +119,28 @@ function convertToMenuOptions(
         if (value && typeof value === "object") {
           const leaves: MenuOption[] = Object.entries(value)
               .filter(([k, v]) => k !== 'children' && typeof v !== 'object')
-              .map(([subName]) => ({
-                label: subName,
-                key: `${safeKey}-${subName}`.replace(/\s+/g, '_'),
-                icon: renderIcon(HardwareChipOutline)
-              }));
+              .map(([subName]) => {
+                const raw = String(subName);
+                const meta = parseSensorLabel(raw);
+                const displayName = meta.baseName || raw;
+                const unit = meta.unit;
+                return {
+                  label: () => h(
+                    'span',
+                    {
+                      class: 'menu-label',
+                      title: raw
+                    },
+                    [
+                      h('span', {class: 'menu-label__name'}, displayName),
+                      unit ? h('span', {class: 'menu-label__unit'}, `[${unit}]`) : null
+                    ]
+                  ),
+                  // Key must keep raw field name for backend exact match.
+                  key: `${safeKey}-${raw}`.replace(/\s+/g, '_'),
+                  icon: renderIcon(HardwareChipOutline)
+                };
+              });
 
           if (value.children) {
             leaves.push(...convertToMenuOptions(value.children, safeKey));
@@ -165,5 +183,24 @@ emitter.on('data-loaded', () => {
 
 .sidebar-menu :deep(.n-menu-item-content-header[title]) {
   cursor: help;
+}
+
+.menu-label {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.menu-label__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.menu-label__unit {
+  color: #80868b;
+  font-size: 12px;
+  white-space: nowrap;
 }
 </style>
