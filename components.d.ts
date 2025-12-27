@@ -21,6 +21,7 @@ declare module 'vue' {
     NMenu: typeof import('naive-ui')['NMenu']
     NPopconfirm: typeof import('naive-ui')['NPopconfirm']
     NResult: typeof import('naive-ui')['NResult']
+    NSelect: typeof import('naive-ui')['NSelect']
     NSpace: typeof import('naive-ui')['NSpace']
     NText: typeof import('naive-ui')['NText']
     RouterLink: typeof import('vue-router')['RouterLink']

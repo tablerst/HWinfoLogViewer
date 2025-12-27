@@ -4,29 +4,29 @@
     <n-card :title="analysisTitle" size="small" bordered style="margin-bottom: 16px">
       <n-row :gutter="12">
         <n-col :span="12" :m="6">
-          <n-statistic label="最小值" :value="minDisplay" tabular-nums>
+          <n-statistic :label="t('chart.min')" :value="minDisplay" tabular-nums>
             <template #prefix>
               <span style="color: #18a058; font-size: 0.8em">↓</span>
             </template>
           </n-statistic>
         </n-col>
         <n-col :span="12" :m="6">
-          <n-statistic label="最大值" :value="maxDisplay" tabular-nums>
+          <n-statistic :label="t('chart.max')" :value="maxDisplay" tabular-nums>
             <template #prefix>
               <span style="color: #d03050; font-size: 0.8em">↑</span>
             </template>
           </n-statistic>
         </n-col>
         <n-col :span="12" :m="6">
-          <n-statistic label="平均值" :value="avgDisplay" tabular-nums/>
+          <n-statistic :label="t('chart.avg')" :value="avgDisplay" tabular-nums/>
         </n-col>
         <n-col :span="12" :m="6">
-          <n-statistic label="中位数" :value="medianDisplay" tabular-nums/>
+          <n-statistic :label="t('chart.median')" :value="medianDisplay" tabular-nums/>
         </n-col>
       </n-row>
     </n-card>
 
-    <n-card :bordered="true" size="small" title="趋势图" class="chart-card">
+    <n-card :bordered="true" size="small" :title="t('chart.trendTitle')" class="chart-card">
       <div class="chart-toolbar">
         <div class="toolbar-row">
           <div class="toolbar-group toolbar-group--grow">
@@ -42,13 +42,13 @@
           </div>
 
           <div class="toolbar-group toolbar-actions">
-            <n-button size="small" :disabled="!hasData" tertiary @click="resetView">重置视图</n-button>
+            <n-button size="small" :disabled="!hasData" tertiary @click="resetView">{{ t('chart.resetView') }}</n-button>
           </div>
         </div>
 
         <div class="toolbar-row">
           <div class="toolbar-group">
-            <span class="toolbar-label">降采样</span>
+            <span class="toolbar-label">{{ t('chart.sampling') }}</span>
             <n-select
               v-model:value="chartPrefs.sampling"
               size="small"
@@ -59,7 +59,7 @@
           </div>
 
           <div class="toolbar-group">
-            <span class="toolbar-label">Y 轴</span>
+            <span class="toolbar-label">{{ t('chart.yAxis') }}</span>
             <n-select
               v-model:value="chartPrefs.yAxisScale"
               size="small"
@@ -70,20 +70,20 @@
           </div>
 
           <div class="toolbar-group">
-            <n-checkbox v-model:checked="chartPrefs.smooth" size="small" :disabled="!hasData">平滑</n-checkbox>
-            <n-checkbox v-model:checked="chartPrefs.showArea" size="small" :disabled="!hasData">面积</n-checkbox>
-            <n-checkbox v-model:checked="chartPrefs.connectNulls" size="small" :disabled="!hasData">连线缺失</n-checkbox>
+            <n-checkbox v-model:checked="chartPrefs.smooth" size="small" :disabled="!hasData">{{ t('chart.smooth') }}</n-checkbox>
+            <n-checkbox v-model:checked="chartPrefs.showArea" size="small" :disabled="!hasData">{{ t('chart.area') }}</n-checkbox>
+            <n-checkbox v-model:checked="chartPrefs.connectNulls" size="small" :disabled="!hasData">{{ t('chart.connectNulls') }}</n-checkbox>
           </div>
 
           <div class="toolbar-group">
-            <span class="toolbar-label">预警</span>
-            <n-checkbox v-model:checked="chartPrefs.warnEnabled" size="small" :disabled="!hasData">启用</n-checkbox>
+            <span class="toolbar-label">{{ t('chart.warning') }}</span>
+            <n-checkbox v-model:checked="chartPrefs.warnEnabled" size="small" :disabled="!hasData">{{ t('chart.enable') }}</n-checkbox>
             <n-input-number
               v-model:value="chartPrefs.warnMin"
               size="small"
               clearable
               :disabled="!hasData || !chartPrefs.warnEnabled"
-              placeholder="下限"
+              :placeholder="t('chart.warnMin')"
               class="toolbar-input-number"
             />
             <n-input-number
@@ -91,27 +91,27 @@
               size="small"
               clearable
               :disabled="!hasData || !chartPrefs.warnEnabled"
-              placeholder="上限"
+              :placeholder="t('chart.warnMax')"
               class="toolbar-input-number"
             />
           </div>
         </div>
 
         <div v-if="hasData" class="chart-meta">
-          <span>有效值 <b>{{ displayedCount }}</b> / {{ totalCount }}</span>
+          <span>{{ t('chart.metaValid') }} <b>{{ displayedCount }}</b> / {{ totalCount }}</span>
           <span class="meta-sep">·</span>
-          <span>范围：{{ displayedRangeText }}</span>
+          <span>{{ t('chart.metaRange', { range: displayedRangeText }) }}</span>
           <span v-if="displayedMissingCount > 0" class="meta-sep">·</span>
-          <span v-if="displayedMissingCount > 0">缺失值：{{ displayedMissingCount }}{{ chartPrefs.connectNulls ? '（已连线）' : '（断线）' }}</span>
+          <span v-if="displayedMissingCount > 0">{{ t('chart.metaMissing', { count: displayedMissingCount, suffix: chartPrefs.connectNulls ? t('chart.metaMissingConnected') : t('chart.metaMissingDisconnected') }) }}</span>
           <span v-if="invalidTimeCount > 0" class="meta-sep">·</span>
-          <span v-if="invalidTimeCount > 0">无法解析时间：{{ invalidTimeCount }}</span>
+          <span v-if="invalidTimeCount > 0">{{ t('chart.metaInvalidTime', { count: invalidTimeCount }) }}</span>
         </div>
       </div>
 
       <div v-show="hasData" ref="chartRef" class="chart"></div>
-      <n-empty v-if="!hasData" description="暂无数据" class="empty-chart">
+      <n-empty v-if="!hasData" :description="t('common.noData')" class="empty-chart">
         <template #extra>
-          <span style="color: #999">请选择左侧传感器查看数据</span>
+          <span style="color: #999">{{ t('chart.emptyHint') }}</span>
         </template>
       </n-empty>
     </n-card>
@@ -120,6 +120,7 @@
 
 <script setup lang="ts">
 import {computed, onMounted, onUnmounted, reactive, ref, watch, nextTick} from 'vue';
+import {useI18n} from 'vue-i18n';
 import * as echarts from 'echarts/core';
 import {
   DataZoomComponent,
@@ -178,6 +179,7 @@ const route = useRoute();
 const chartRef = ref<HTMLElement | null>(null);
 let chartInstance: echarts.ECharts | null = null;
 const message = useMessage();
+const {t, locale} = useI18n();
 const hasData = ref(false);
 const chartPrefs = useChartPrefsStore();
 
@@ -210,33 +212,33 @@ const stats = reactive<{
 });
 
 const sensorMeta = computed(() => parseSensorLabel(sensorFieldName.value || ''));
-const sensorDisplayName = computed(() => sensorMeta.value.baseName || sensorFieldName.value || '数值');
+const sensorDisplayName = computed(() => sensorMeta.value.baseName || sensorFieldName.value || t('chart.valueSeriesName'));
 const sensorUnit = computed(() => sensorMeta.value.unit);
 const analysisTitle = computed(() => {
   const u = sensorUnit.value;
-  return u ? `数据分析（单位：[${u}]）` : '数据分析';
+  return u ? t('chart.analysisTitleWithUnit', {unit: u}) : t('chart.analysisTitle');
 });
 
-const minDisplay = computed(() => (typeof stats.min === 'number' ? formatValueByUnit(stats.min, sensorUnit.value) : stats.min));
-const maxDisplay = computed(() => (typeof stats.max === 'number' ? formatValueByUnit(stats.max, sensorUnit.value) : stats.max));
-const medianDisplay = computed(() => (typeof stats.median === 'number' ? formatValueByUnit(stats.median, sensorUnit.value) : stats.median));
-const avgDisplay = computed(() => (displayedCount.value > 0 ? formatValueByUnit(stats.avg, sensorUnit.value) : '-'));
+const minDisplay = computed(() => (typeof stats.min === 'number' ? formatValueByUnit(stats.min, sensorUnit.value, {locale: locale.value}) : stats.min));
+const maxDisplay = computed(() => (typeof stats.max === 'number' ? formatValueByUnit(stats.max, sensorUnit.value, {locale: locale.value}) : stats.max));
+const medianDisplay = computed(() => (typeof stats.median === 'number' ? formatValueByUnit(stats.median, sensorUnit.value, {locale: locale.value}) : stats.median));
+const avgDisplay = computed(() => (displayedCount.value > 0 ? formatValueByUnit(stats.avg, sensorUnit.value, {locale: locale.value}) : '-'));
 
 const extractFormattedName = (key: string) => key.split('-').pop()!.replace(/_/g, ' ');
 
-const samplingOptions = [
-  {label: '自动', value: 'auto'},
-  {label: '关闭', value: 'none'},
+const samplingOptions = computed(() => [
+  {label: t('chart.sampling_auto'), value: 'auto'},
+  {label: t('chart.sampling_none'), value: 'none'},
   {label: 'LTTB', value: 'lttb'},
-  {label: '平均', value: 'average'},
-  {label: '最大', value: 'max'},
-  {label: '最小', value: 'min'}
-];
+  {label: t('chart.sampling_average'), value: 'average'},
+  {label: t('chart.sampling_max'), value: 'max'},
+  {label: t('chart.sampling_min'), value: 'min'}
+]);
 
-const yAxisScaleOptions = [
-  {label: '线性', value: 'linear'},
-  {label: '对数', value: 'log'}
-];
+const yAxisScaleOptions = computed(() => [
+  {label: t('chart.yAxis_linear'), value: 'linear'},
+  {label: t('chart.yAxis_log'), value: 'log'}
+]);
 
 function countNumeric(points: Point[]) {
   let c = 0;
@@ -341,7 +343,7 @@ const isDateDisabled = (ts: number) => {
 
 const getData = async (rawKey: string): Promise<any[]> => {
   const formattedName = extractFormattedName(rawKey);
-  const pending = message.loading(`正在加载「${formattedName}」数据…`, {duration: 0});
+  const pending = message.loading(t('chart.loadingSensorData', {name: formattedName}), {duration: 0});
   try {
     const res = await invoke<string>('get_data_by_key', {key: formattedName});
     let data: unknown;
@@ -349,19 +351,19 @@ const getData = async (rawKey: string): Promise<any[]> => {
       data = JSON.parse(res);
     } catch (err) {
       pending.destroy();
-      message.error(`解析「${formattedName}」数据失败：${formatError(err)}`);
+      message.error(t('chart.parseSensorDataFailed', {name: formattedName, error: formatError(err, t('common.unknownError'))}));
       return [];
     }
     console.log('获取的数据:', data);
 
     pending.destroy();
     const arr = Array.isArray(data) ? (data as any[]) : [];
-    message.success(`已加载「${formattedName}」数据（${arr.length} 条）`);
+    message.success(t('chart.loadedSensorDataSuccess', {name: formattedName, count: arr.length}));
     return arr;
   } catch (err) {
     pending.destroy();
     console.error('拉取传感器数据失败', err);
-    message.error(`加载「${formattedName}」数据失败：${formatError(err)}`);
+    message.error(t('chart.loadSensorDataFailed', {name: formattedName, error: formatError(err, t('common.unknownError'))}));
     return [];
   }
 };
@@ -511,7 +513,7 @@ const renderChart = async () => {
     return 'log' as const;
   })();
 
-  const seriesName = sensorDisplayName.value || '数值';
+  const seriesName = sensorDisplayName.value || t('chart.valueSeriesName');
   const unit = sensorUnit.value;
   const showArea = chartPrefs.showArea;
   const shouldAnimate = countNumeric(points) < 2000;
@@ -542,7 +544,7 @@ const renderChart = async () => {
     const arr: any[] = [];
     if (maxPoint) {
       arr.push({
-        name: '最大值',
+        name: t('chart.max'),
         coord: [maxPoint.ts, maxPoint.v],
         value: maxPoint.v,
         itemStyle: {color: COLOR_HIGH}
@@ -550,7 +552,7 @@ const renderChart = async () => {
     }
     if (minPoint) {
       arr.push({
-        name: '最小值',
+        name: t('chart.min'),
         coord: [minPoint.ts, minPoint.v],
         value: minPoint.v,
         itemStyle: {color: COLOR_LOW}
@@ -633,13 +635,13 @@ const renderChart = async () => {
           : null,
       },
       {
-        name: `${seriesName}（低于下限）`,
+        name: t('chart.seriesBelowMin', {name: seriesName}),
         data: below,
         ...baseSeriesCommon,
         itemStyle: {color: COLOR_LOW}
       },
       {
-        name: `${seriesName}（高于上限）`,
+        name: t('chart.seriesAboveMax', {name: seriesName}),
         data: above,
         ...baseSeriesCommon,
         itemStyle: {color: COLOR_HIGH}
@@ -656,15 +658,15 @@ const renderChart = async () => {
             const name = p?.name ?? '';
             const v = p?.value;
             const valText = (typeof v === 'number' && Number.isFinite(v))
-              ? formatValueWithUnit(v, unit)
+              ? formatValueWithUnit(v, unit, {locale: locale.value})
               : '-';
-            return name ? `${name}: ${valText}` : `${valText}`;
+            return name ? t('common.nameValue', {name, value: valText}) : `${valText}`;
           }
         },
         lineStyle: {type: 'dashed', width: 1},
         data: [
-          {name: '下限', yAxis: warnRange.min, lineStyle: {color: COLOR_LOW}},
-          {name: '上限', yAxis: warnRange.max, lineStyle: {color: COLOR_HIGH}}
+          {name: t('chart.lowerLimit'), yAxis: warnRange.min, lineStyle: {color: COLOR_LOW}},
+          {name: t('chart.upperLimit'), yAxis: warnRange.max, lineStyle: {color: COLOR_HIGH}}
         ]
       }
     : undefined;
@@ -701,9 +703,9 @@ const renderChart = async () => {
         const v = Array.isArray(value) ? value[1] : undefined;
         const timeText = typeof ts === 'number' ? formatDateTimeForTooltip(ts) : '-';
         const valText = (typeof v === 'number' && Number.isFinite(v))
-          ? formatValueWithUnit(v, unit)
+          ? formatValueWithUnit(v, unit, {locale: locale.value})
           : '-';
-        return `${timeText}<br/>${seriesName}：${valText}`;
+        return `${timeText}<br/>${t('chart.tooltipSeriesValue', {name: seriesName, value: valText})}`;
       }
     },
     dataZoom: [
@@ -782,9 +784,9 @@ const renderChart = async () => {
                 const name = p?.name ?? '';
                 const value = p?.value;
                 const valText = typeof value === 'number' && Number.isFinite(value)
-                  ? formatValueByUnit(value, unit)
+                  ? formatValueByUnit(value, unit, {locale: locale.value})
                   : '-';
-                return name ? `${name}: ${valText}` : `${valText}`;
+                return name ? t('common.nameValue', {name, value: valText}) : `${valText}`;
               }
             }
           },
@@ -798,7 +800,7 @@ const renderChart = async () => {
 
   if (chartPrefs.yAxisScale === 'log' && yAxisType !== 'log' && !logFallbackWarned.value) {
     logFallbackWarned.value = true;
-    message.warning('当前数据包含 ≤ 0 的值，无法使用对数坐标轴（已自动回退为线性）。');
+    message.warning(t('chart.logAxisFallback'));
   }
   if (yAxisType === 'log') {
     logFallbackWarned.value = false;
@@ -854,7 +856,7 @@ async function loadAndBuild(rawKey: string) {
   pointsAll.value = points;
 
   if (!field && rawData.value.length) {
-    message.warning('未能识别该传感器字段，可能是后端返回结构变化。');
+    message.warning(t('chart.unrecognizedField'));
   }
 
   if (points.length) {

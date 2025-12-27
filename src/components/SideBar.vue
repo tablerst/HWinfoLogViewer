@@ -15,6 +15,7 @@
 import {Component, h, onMounted, ref} from 'vue';
 import {useRouter} from 'vue-router';
 import {NIcon, useMessage} from 'naive-ui';
+import {useI18n} from 'vue-i18n';
 import {BarChartOutline, HardwareChipOutline, HomeOutline, SettingsOutline} from '@vicons/ionicons5';
 import {invoke} from '@tauri-apps/api/core';
 import {emitter} from "../utils/eventBus.ts";
@@ -35,20 +36,21 @@ function renderIcon(icon: Component) {
 const activeKey = ref('home');
 const router = useRouter();
 const message = useMessage();
+const {t} = useI18n();
 const menuOptions = ref<MenuOption[]>([
   {
-    label: '首页',
+    label: () => t('nav.home'),
     key: 'home',
     icon: renderIcon(HomeOutline)
   },
   {
-    label: '传感器数据',
+    label: () => t('nav.sensorData'),
     key: 'sensor-data',
     icon: renderIcon(BarChartOutline),
     children: []
   },
   {
-    label: '系统设置',
+    label: () => t('nav.settings'),
     key: 'settings',
     icon: renderIcon(SettingsOutline)
   }
@@ -66,14 +68,14 @@ function handleMenuSelect(key: string) {
 }
 
 async function getLogData() {
-  const pending = message.loading('正在获取数据…', {duration: 0});
+  const pending = message.loading(t('sidebar.loadingData'), {duration: 0});
   try {
     const raw = await invoke<string>('get_data');
     let parsed: unknown;
     try {
       parsed = JSON.parse(raw);
     } catch (err) {
-      throw new Error(`解析后端返回失败：${formatError(err)}`);
+      throw new Error(t('sidebar.parseBackendFailed', { error: formatError(err, t('common.unknownError')) }));
     }
 
     console.log('获取的数据:', parsed);
@@ -84,7 +86,7 @@ async function getLogData() {
           opt.key === 'sensor-data' ? {...opt, children: []} : opt
       );
       pending.destroy();
-      message.info('暂无数据，请先上传并处理 CSV');
+      message.info(t('sidebar.noDataHint'));
       return;
     }
 
@@ -94,11 +96,11 @@ async function getLogData() {
         opt.key === 'sensor-data' ? {...opt, children: sensorChildren} : opt
     );
     pending.destroy();
-    message.success('数据加载成功');
+    message.success(t('sidebar.dataLoaded'));
   } catch (err) {
     console.error('获取数据失败:', err);
     pending.destroy();
-    message.error(`获取数据失败：${formatError(err)}`);
+    message.error(t('sidebar.dataLoadFailed', { error: formatError(err, t('common.unknownError')) }));
   }
 }
 

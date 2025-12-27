@@ -4,11 +4,15 @@ import router from './router/router';
 import {createPinia} from 'pinia';
 import {createI18n} from "vue-i18n";
 
+import { loadPersistedLocale } from './utils/locale';
+
 import zhCN from './locales/zh-CN.ts';
 import enUS from './locales/en-US.ts';
 
 const i18n = createI18n({
-    locale: 'zh-CN',
+    legacy: false,
+    globalInjection: true,
+    locale: loadPersistedLocale('zh-CN'),
     fallbackLocale: 'en-US',
     messages: {
         'zh-CN': zhCN,
